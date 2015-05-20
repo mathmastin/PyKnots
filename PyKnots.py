@@ -1,7 +1,6 @@
 ############################################################
 # This file contains the class definitions for working
-#   with the augemented whitten group and the
-#   associated set of composite links.
+#   with the whitten group
 #
 #
 #   Matt Mastin
@@ -71,8 +70,8 @@ class gamma_element():
 # here we define the comparison method
     def __cmp__(self, other):
 
-        sp=con_perm(self.p)
-        op=con_perm(other.p)
+        #sp=con_perm(self.p)
+        #op=con_perm(other.p)
         
         if self.m==other.m and self.r==other.r and self.p==other.p:
             return 0
@@ -84,9 +83,9 @@ class gamma_element():
             return 1
         if self.r > other.r:
             return -1
-        if sp < op:
+        if self.p < other.p:
             return -1
-        if sp > op:
+        if self.p > other.p:
             return 1
 # now we define a hash
     def __hash__(self):
@@ -403,6 +402,42 @@ def whit_mult(x, y):
 #
 ##################################################
 
+##################################################
+# Method to find the inverse of a whitten element
+#
+def w_inverse(x):
+
+    i_p=[0] * len(x.p)
+    i_r=[0] * len(x.r)
+    i_m=x.m
+
+    for i in range(0,len(x.p)):
+        i_p[i]=(x.p).index(i+1)+1
+
+    for i in range(0,len(x.r)):
+        i_r[i]=x.r[(x.p).index(i+1)]
+
+    return gamma_element(i_m,i_r,i_p)
+
+#
+##################################################
+
+##################################################
+# Method to compute conjugate subgroups. Takes
+#   a list of whitten elements G and a single
+#   whitten element h. h^1*G*h is returned.
+#
+def conj_group(G,h):
+
+    newG=[]
+
+    for i in G:
+        newG.append(whit_mult(whit_mult(w_inverse(h),i),h))
+
+    return newG
+
+#
+##################################################
 
 ##################################################
 # Method to build the group \G_{n,k}
@@ -852,30 +887,13 @@ def strip_list(L_orig):
 #
 ##################################################
 
-
-##################################################
-# Definitions of subgroups
-
-S_2_1=[0,6]
-S_4_1=[0,1,6]
-S_4_2=[0,6,2]
-S_8_1=[0,1,6,2]
-S_8_2=[0,6,1,10]
-
-presubgs=[S_2_1,S_4_1,S_4_2,S_8_1,S_8_2]
-
-sgnames=["$\Sigma_{2,1}$","$\Sigma_{4,1}$","$\Sigma_{4,2}$","$\Sigma_{8,1}$","$\Sigma_{8,2}$"]
-
-#
-##################################################
-
 ##################################################
 # Read list from file
 def read_list(infile):
     outfile=open("readlist.py",'w')
     l=infile.read()
 
-    s="l=" + l
+    s="l=" + str(l)
 
     s=s.replace("{","[")
     s=s.replace("}","]")
@@ -1101,9 +1119,143 @@ def read_group(infile):
 #
 ##################################################
 
+##################################################
+# Method to convert SnapPea DT codes to
+#   KnotTheory DT codes
+def convertDT(code,num_comps):
+
+    code=code.lower()
+    crossings = ord(code[0])-96
+    components = ord(code[1])-96
+    comp_crossings=[]
+    for i in range(0,num_comps):
+        comp_crossings.append(ord(code[i+2])-96)
+
+    DTpart=code[2+num_comps:]
+    
+    DTCode=[]
+    temp_list=[]
+
+    count=0
+
+    for i in range(0,num_comps):
+        for j in range(0,comp_crossings[i]):
+            temp_list.append(2*(ord(DTpart[count])-96))
+            count=count+1
+        DTCode.append(temp_list)
+        temp_list=[]
+    
+    return DTCode
+#
+##################################################
+
+##################################################
+# Definitions of subgroups
+
+ID=list_to_gamma([1,[1,1],[1,2]])
+m=list_to_gamma([-1,[1,1],[1,2]])
+PI=list_to_gamma([1,[-1,-1],[1,2]])
+mPI=list_to_gamma([-1,[-1,-1],[1,2]])
+i1=list_to_gamma([1,[-1,1],[1,2]])
+i2=list_to_gamma([1,[1,-1],[1,2]])
+pinv=list_to_gamma([1,[1,1],[2,1]])
+mp=list_to_gamma([-1,[1,1],[2,1]])
+mi1=list_to_gamma([-1,[-1,1],[1,2]])
+mi2=list_to_gamma([-1,[1,-1],[1,2]])
+a=list_to_gamma([1,[-1,1],[2,1]])
+mb=list_to_gamma([-1,[-1,-1],[2,1]])
+ma=list_to_gamma([-1,[-1,1],[2,1]])
+
+NoSym=[ID]
+
+S_2_1=[ID,PI]
+S_2_2=[ID,m]
+S_2_3=[ID,mPI]
+S_2_4=[ID,i1]
+S_2_5=[ID,pinv]
+S_2_6=[ID,mp]
+S_2_7=[ID,mi1]
+
+S_4_1=[ID,PI,pinv]
+S_4_2=[ID,i1,i2]
+S_4_3=[ID,mi1,mi2]
+S_4_4=[ID,a]
+S_4_5=[ID,ma]
+S_4_6=[ID,m,i1]
+S_4_8=[ID,m,pinv]
+S_4_9=[ID,m,PI]
+S_4_11=[ID,mb,mp]
+S_4_12=[ID,mPI,mb]
+S_4_14=[ID,mi1,i2]
+
+S_8_1=[ID,pinv,PI,i2]
+S_8_2=[ID,PI,pinv,mi2]
+S_8_3=[ID,i1,i2,m]
+S_8_4=[ID,m,a]
+S_8_5=[ID,m,pinv,PI]
+S_8_6=[ID,mi1,a]
+S_8_7=[ID,i1,i2,ma]
+
+Full=build_gamma(2)
+
+
+
+gens=[NoSym,S_2_1,S_2_2,S_2_3,S_2_4,S_2_5,S_2_6,S_2_7,
+      S_4_1,S_4_2,S_4_3,S_4_4,S_4_5,S_4_6,S_4_8,
+      S_4_9,S_4_11,S_4_12,S_4_14,
+      S_8_1,S_8_2,S_8_3,S_8_4,S_8_5,S_8_6,S_8_7,Full]
+
+sgnames=["No Symmetry","Sigma_{2,1}","Sigma_{2,2}","Sigma_{2,3}",
+         "Sigma_{2,4}","Sigma_{2,5}","Sigma_{2,6}",
+         "Sigma_{2,7}","Sigma_{4,1}","Sigma_{4,2}",
+         "Sigma_{4,3}","Sigma_{4,4}","Sigma_{4,5}",
+         "Sigma_{4,6}","Sigma_{4,8}","Sigma_{4,9}",
+         "Sigma_{4,11}","Sigma_{4,12}","Sigma_{4,14}",
+         "Sigma_{8,1}","Sigma_{8,2}","Sigma_{8,3}",
+         "Sigma_{8,4}","Sigma_{8,5}","Sigma_{8,6}",
+         "Sigma_{8,7}",
+         "Full Symmetry"]
+
+#
+##################################################
+
+##################################################
+# Method to figure out the name of a given
+#   2 component symmetry group
+def whichgroup(G):
+    cands=[]
+    flag=1
+    done=0
+    gam2=build_gamma(2)
+    g=0
+    
+    while(done==0):
+        for i in range(0,len(gens)):
+            for j in gens[i]:
+                if G.count(j)==0:
+                    flag=0
+            if flag==1:
+                cands.append(sgnames[i])
+            flag=1
+        if(len(cands)==0):
+            G=conj_group(G,gam2[g])
+            g=g+1
+            if(g==len(gam2)):
+                done=1
+                print "New Group Found!"
+            G.sort()
+            print G
+        else:
+            done=1
+    cands.sort()
+    return cands[len(cands)-1]
+#
+##################################################
+
 ############################################################
 # Test Code
 ############################################################
+
 
 ##ifile=open("s21.txt",'r')
 ##sg=read_list(ifile)
